@@ -124,3 +124,4 @@ else:
     # Show data preview
     st.write("### Data Preview")
     st.dataframe(data.head())
+
