@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from datetime import datetime, timedelta
 
 # List of 50 important cryptocurrencies
 COINS = {
@@ -80,21 +84,47 @@ def get_crypto_data(crypto_id, days=7):
     df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
-# Function to fetch cryptocurrency news
-def get_crypto_news():
-    url = "https://api.coingecko.com/api/v3/status_updates"
-    response = requests.get(url)
+# Page configuration
+st.set_page_config(page_title="WITIN Crypto", page_icon="💎", layout="wide")
 
-    if response.status_code != 200:
-        st.error(f"⚠ Failed to fetch news. API returned {response.status_code}")
-        return []
+# Page title
+st.title("📊 WITIN Crypto Dashboard")
+st.write("Bitcoin price heatmap over time.")
 
-    try:
-        data = response.json()
-        return data.get("status_updates", [])
-    except Exception as e:
-        st.error(f"⚠ Error fetching news: {e}")
-        return []
+# Fetch Bitcoin price history from CoinGecko API
+@st.cache_data(ttl=3600)  # Cache data for 1 hour
+def get_bitcoin_price_history():
+    API_URL = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
+    params = {
+        "vs_currency": "usd",
+        "days": "30",  # Get data for the past 30 days
+        "interval": "daily"
+    }
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        st.warning("⚠ Unable to fetch Bitcoin price data. Please try again later!")
+        return None
+
+# Call API to get data
+data = get_bitcoin_price_history()
+
+if data:
+    # Process data
+    prices = data["prices"]
+    df = pd.DataFrame(prices, columns=["timestamp", "price"])
+    df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.date  # Convert timestamp to date
+
+    # Convert to pivot table format for heatmap
+    df["hour"] = [datetime.now().hour] * len(df)  # Create a dummy hour column
+    heatmap_data = df.pivot("hour", "date", "price")
+
+    # Plot Heatmap
+    fig, ax = plt.subplots(figsize=(12, 5))
+    sns.heatmap(heatmap_data, cmap="coolwarm", annot=True, fmt=".0f", linewidths=0.5, ax=ax)
+    plt.title("Bitcoin Price Heatmap (USD) - Last 30 Days", fontsize=14)
+
 
 # Hiển thị logo trong sidebar
 st.sidebar.image("https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png", width=150)
@@ -123,14 +153,5 @@ else:
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
 
 # Display Crypto News
-st.write("### 📰 Latest Crypto Market News")
-news_articles = get_crypto_news()
-
-if news_articles:
-    for article in news_articles[:5]:  # Show top 5 articles
-        st.markdown(f"#### {article['project']['name'] if 'project' in article else 'General News'}")
-        st.write(article["description"])
-        st.write("---")
-else:
-    st.write("⚠ No news available at the moment.")
+ st.pyplot(fig)
 
