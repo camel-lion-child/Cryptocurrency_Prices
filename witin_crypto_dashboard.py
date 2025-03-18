@@ -81,8 +81,8 @@ def get_crypto_data(crypto_id, days=7):
     return df
 
 # Function to fetch cryptocurrency news
-def get_crypto_news(crypto_symbol):
-    url = f"https://cryptonews-api.com/api/v1?tickers={crypto_symbol}&items=5&token=YOUR_API_KEY"
+def get_crypto_news():
+    url = "https://api.coingecko.com/api/v3/status_updates"
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -91,15 +91,7 @@ def get_crypto_news(crypto_symbol):
 
     try:
         data = response.json()
-        articles = data.get("data", [])
-
-        # Debugging: Log API response if no news is found
-        if not articles:
-            st.warning(f"⚠ No specific news found for {crypto_symbol}. Showing general crypto news instead.")
-            return get_general_crypto_news()  # Fetch general crypto news if specific news is unavailable
-
-        return articles
-
+        return data.get("status_updates", [])
     except Exception as e:
         st.error(f"⚠ Error fetching news: {e}")
         return []
@@ -128,14 +120,14 @@ else:
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
 
 # Display Crypto News
-st.write(f"### 📰 Latest {crypto} News")
-news_articles = get_crypto_news(crypto)
+st.write("### 📰 Latest Crypto Market News")
+news_articles = get_crypto_news()
 
 if news_articles:
-    for article in news_articles:
-        st.markdown(f"#### [{article['title']}]({article['url']})")
-        st.write(article["text"])
-        st.image(article["image_url"])
+    for article in news_articles[:5]:  # Show top 5 articles
+        st.markdown(f"#### {article['project']['name'] if 'project' in article else 'General News'}")
+        st.write(article["description"])
         st.write("---")
 else:
-    st.write("No news found for this cryptocurrency.")
+    st.write("⚠ No news available at the moment.")
+
