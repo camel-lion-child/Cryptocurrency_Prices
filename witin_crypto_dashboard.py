@@ -100,7 +100,7 @@ def get_crypto_news():
 st.sidebar.image("https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png", width=150)
 
 # Streamlit UI
-st.title("📈 WITIN Crypto Analytics Dashboard")
+st.title("Crypto Analytics Dashboard")
 
 # Sidebar: User input
 crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()), key="crypto_select")
