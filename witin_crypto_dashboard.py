@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
-import yfinance as yf
 
 # List of 50 important cryptocurrencies
 COINS = {
@@ -81,17 +80,6 @@ def get_crypto_data(crypto_id, days=7):
     df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
-# Function to fetch stock-like cryptocurrency data from Yahoo Finance
-def get_crypto_stock_data(symbol='BTC-USD'):
-    try:
-        df = yf.download(symbol, period='1mo', interval='1d')
-        if df.empty:
-            st.warning(f"⚠ No stock data found for {symbol}. Yahoo Finance may not support this symbol.")
-        return df
-    except Exception as e:
-        st.error(f"⚠ Error fetching Yahoo Finance data: {e}")
-        return pd.DataFrame()
-
 # Streamlit UI
 st.title("📈 WITIN Crypto Analytics Dashboard")
 
@@ -115,13 +103,48 @@ else:
     latest_price = data['Price'].iloc[-1]
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
 
-    # Yahoo Finance Data for Comparison
-    st.write("### Stock-Like Crypto Data from Yahoo Finance")
-    yf_data = get_crypto_stock_data(symbol=f"{crypto.upper()}-USD")
-    if not yf_data.empty:
-        st.dataframe(yf_data.tail())
-    
-    # Show data preview
-    st.write("### Data Preview")
-    st.dataframe(data.head())
+# Future Feature: Add predictive analytics, news integration, and social sentiment analysis
+# Function to fetch cryptocurrency news
+def get_crypto_news(crypto_symbol):
+    url = f"https://cryptonews-api.com/api/v1?tickers={crypto_symbol}&items=5&token=YOUR_API_KEY"
+    response = requests.get(url)
 
+    try:
+        data = response.json()
+        return data.get("data", [])
+    except Exception as e:
+        st.error(f"Failed to fetch news: {e}")
+        return []
+
+# Sidebar: User input
+crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
+days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
+
+# Fetch and display data
+crypto_id = COINS[crypto]  # Get CoinGecko ID
+data = get_crypto_data(crypto_id, days)
+
+# Check if DataFrame is empty before displaying the chart
+if data.empty:
+    st.error(f"⚠ No data available for {crypto}. Try another cryptocurrency.")
+else:
+    st.write(f"### {crypto} Price Trend - Last {days} Days")
+    fig = px.line(data, x='Timestamp', y='Price', title=f"{crypto} Price Trend")
+    st.plotly_chart(fig)
+
+    # Show latest price
+    latest_price = data['Price'].iloc[-1]
+    st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
+
+# 🔥 New Feature: Display Crypto News
+st.write(f"### 📰 Latest {crypto} News")
+news_articles = get_crypto_news(crypto)
+
+if news_articles:
+    for article in news_articles:
+        st.markdown(f"#### [{article['title']}]({article['url']})")
+        st.write(article["text"])
+        st.image(article["image_url"])
+        st.write("---")
+else:
+    st.write("No news found for this cryptocurrency.")
