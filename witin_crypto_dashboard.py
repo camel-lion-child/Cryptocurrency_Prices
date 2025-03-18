@@ -13,12 +13,27 @@ def get_top_coins(limit=100):
         "page": 1,
         "sparkline": False
     }
-    response = requests.get(url)
-    data = response.json()
     
-    # Extract coin names & IDs
-    coin_dict = {coin['name']: coin['id'] for coin in data}
-    return coin_dict
+    response = requests.get(url)
+    
+    # Kiểm tra nếu API request thất bại
+    if response.status_code != 200:
+        st.error(f"⚠ Failed to fetch top coins. API Error: {response.status_code}")
+        return {}
+
+    try:
+        data = response.json()
+        if not isinstance(data, list):
+            st.error("⚠ Invalid API response format. Expected a list.")
+            return {}
+
+        # Tạo danh sách coin {Tên: ID}
+        coin_dict = {coin['name']: coin['id'] for coin in data}
+        return coin_dict
+
+    except Exception as e:
+        st.error(f"⚠ Error parsing API response: {e}")
+        return {}
 
 # Function to fetch crypto price data from CoinGecko API
 def get_crypto_data(crypto_id, days=7):
@@ -48,6 +63,12 @@ st.title("📈 WITIN Crypto Analytics Dashboard")
 
 # Fetch top 100 coins
 coin_dict = get_top_coins(100)
+
+# Nếu API lỗi, hiển thị cảnh báo và dừng ứng dụng
+if not coin_dict:
+    st.error("⚠ Could not fetch top cryptocurrencies. Please try again later.")
+    st.stop()
+
 coin_names = list(coin_dict.keys())
 
 # Sidebar: User input
