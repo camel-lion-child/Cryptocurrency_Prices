@@ -1,3 +1,4 @@
+binance
 yfinance
 matplotlib
 seaborn
