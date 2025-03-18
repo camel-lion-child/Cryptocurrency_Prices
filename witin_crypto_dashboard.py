@@ -85,11 +85,23 @@ def get_crypto_news(crypto_symbol):
     url = f"https://cryptonews-api.com/api/v1?tickers={crypto_symbol}&items=5&token=YOUR_API_KEY"
     response = requests.get(url)
 
+    if response.status_code != 200:
+        st.error(f"⚠ Failed to fetch news. API returned {response.status_code}")
+        return []
+
     try:
         data = response.json()
-        return data.get("data", [])
+        articles = data.get("data", [])
+
+        # Debugging: Log API response if no news is found
+        if not articles:
+            st.warning(f"⚠ No specific news found for {crypto_symbol}. Showing general crypto news instead.")
+            return get_general_crypto_news()  # Fetch general crypto news if specific news is unavailable
+
+        return articles
+
     except Exception as e:
-        st.error(f"Failed to fetch news: {e}")
+        st.error(f"⚠ Error fetching news: {e}")
         return []
 
 # Streamlit UI
