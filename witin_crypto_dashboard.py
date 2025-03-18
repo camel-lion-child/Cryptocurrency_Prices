@@ -4,7 +4,7 @@ import requests
 import plotly.express as px
 import yfinance as yf
 
-# Danh sách 50 đồng coin quan trọng
+# List of 50 important cryptocurrencies
 COINS = {
     "Bitcoin": "bitcoin",
     "Ethereum": "ethereum",
@@ -58,8 +58,8 @@ COINS = {
     "Helium": "helium"
 }
 
-# Function to fetch crypto price data from CoinGecko API
-def get_crypto_data(crypto_id, days=365):
+# Function to fetch cryptocurrency price data from CoinGecko API
+def get_crypto_data(crypto_id, days=7):
     url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart?vs_currency=usd&days={days}"
     response = requests.get(url)
     
@@ -81,7 +81,7 @@ def get_crypto_data(crypto_id, days=365):
     df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
-# Function to fetch stock-like crypto data from Yahoo Finance
+# Function to fetch stock-like cryptocurrency data from Yahoo Finance
 def get_crypto_stock_data(symbol='BTC-USD'):
     try:
         df = yf.download(symbol, period='1mo', interval='1d')
@@ -103,7 +103,7 @@ days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value
 crypto_id = COINS[crypto]  # Get CoinGecko ID
 data = get_crypto_data(crypto_id, days)
 
-# Kiểm tra nếu DataFrame rỗng trước khi hiển thị biểu đồ
+# Check if DataFrame is empty before displaying the chart
 if data.empty:
     st.error(f"⚠ No data available for {crypto}. Try another cryptocurrency.")
 else:
