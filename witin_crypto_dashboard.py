@@ -3,8 +3,6 @@ import pandas as pd
 import requests
 import plotly.express as px
 
-
-
 # List of 50 important cryptocurrencies
 COINS = {
     "Bitcoin": "bitcoin",
@@ -98,24 +96,8 @@ def get_crypto_news():
         st.error(f"⚠ Error fetching news: {e}")
         return []
 
-st.markdown(
-    """
-    <style>
-    .logo-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    f'<div class="logo-container"><img src="https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png" width="200"></div>',
-    unsafe_allow_html=True
-)
+# Hiển thị logo trong sidebar
+st.sidebar.image("https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png", width=150)
 
 # Streamlit UI
 st.title("📈 WITIN Crypto Analytics Dashboard")
