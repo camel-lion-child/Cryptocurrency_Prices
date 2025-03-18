@@ -1,10 +1,8 @@
 import streamlit as st
 import pandas as pd
-from binance.client import Client
+import requests
 import plotly.express as px
-
-# 🚀 Binance API Client (No API Key Required for Price Data)
-client = Client()
+from datetime import datetime
 
 # 🚀 Page Configuration
 st.set_page_config(page_title="WITIN Crypto Dashboard", page_icon="💎", layout="wide")
@@ -16,7 +14,7 @@ st.sidebar.image(LOGO_URL, width=150)
 # 📊 Title
 st.title("📊 Crypto Price Dashboard (Binance API)")
 
-# 🔥 List of Top Cryptocurrencies Supported by Binance
+# 🔥 Binance Cryptocurrency Symbols
 COINS = {
     "Bitcoin": "BTCUSDT",
     "Ethereum": "ETHUSDT",
@@ -37,29 +35,68 @@ COINS = {
     "Tron": "TRXUSDT",
     "Filecoin": "FILUSDT",
     "Monero": "XMRUSDT",
-    "EOS": "EOSUSDT"
+    "EOS": "EOSUSDT",
+    "Aave": "AAVEUSDT",
+    "Tezos": "XTZUSDT",
+    "The Graph": "GRTUSDT",
+    "Fantom": "FTMUSDT",
+    "Maker": "MKRUSDT",
+    "NEO": "NEOUSDT",
+    "Kusama": "KSMUSDT",
+    "Dash": "DASHUSDT",
+    "Zcash": "ZECUSDT",
+    "SushiSwap": "SUSHIUSDT",
+    "Curve DAO Token": "CRVUSDT",
+    "Compound": "COMPUSDT",
+    "Waves": "WAVESUSDT",
+    "Chiliz": "CHZUSDT",
+    "Hedera": "HBARUSDT",
+    "Enjin Coin": "ENJUSDT",
+    "Theta Network": "THETAUSDT",
+    "Bitcoin Cash": "BCHUSDT",
+    "Algorand": "ALGOUSDT",
+    "Decentraland": "MANAUSDT",
+    "Axie Infinity": "AXSUSDT",
+    "Gala": "GALAUSDT",
+    "Quant": "QNTUSDT",
+    "Celo": "CELOUSDT",
+    "Thorchain": "RUNEUSDT",
+    "Harmony": "ONEUSDT",
+    "Stacks": "STXUSDT",
+    "Flow": "FLOWUSDT",
+    "Kava": "KAVAUSDT",
+    "Helium": "HNTUSDT"
 }
 
 # 🎯 Sidebar Selection
 crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
 symbol = COINS[crypto]
 
-# 📡 Fetch Historical Data from Binance API
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_crypto_data(symbol, interval='1d', limit=30):
-    klines = client.get_klines(symbol=symbol, interval=interval, limit=limit)
+# 📡 Fetch Crypto Price Data from Binance
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_crypto_data(symbol, interval="1d", limit=30):
+    url = f"https://api.binance.com/api/v3/klines?symbol={symbol}&interval={interval}&limit={limit}"
+    response = requests.get(url)
 
-    df = pd.DataFrame(klines, columns=[
-        "Timestamp", "Open", "High", "Low", "Close", "Volume", 
-        "Close_time", "Quote_asset_volume", "Trades", 
-        "Taker_buy_base_vol", "Taker_buy_quote_vol", "Ignore"
-    ])
-    
-    # Convert timestamp to readable date
-    df['Timestamp'] = pd.to_datetime(df['Timestamp'], unit='ms')
-    df['Close'] = pd.to_numeric(df['Close'])
-    
-    return df[['Timestamp', 'Close']]
+    try:
+        data = response.json()
+
+        # Check if API returned valid data
+        if isinstance(data, list):
+            df = pd.DataFrame(data, columns=[
+                "timestamp", "Open", "High", "Low", "Price", "Volume", "CloseTime",
+                "QuoteVolume", "Trades", "TakerBuyBase", "TakerBuyQuote", "Ignore"
+            ])
+            df["Timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+            df["Price"] = df["Price"].astype(float)  # Convert to float for plotting
+            return df[["Timestamp", "Price"]]
+        else:
+            st.error("⚠ Binance API returned an unexpected response.")
+            return pd.DataFrame(columns=["Timestamp", "Price"])
+
+    except Exception as e:
+        st.error(f"⚠ API Fetch Error: {e}")
+        return pd.DataFrame(columns=["Timestamp", "Price"])
 
 # 📊 Fetch and Display Price Chart
 data = get_crypto_data(symbol)
@@ -68,9 +105,9 @@ if data.empty:
     st.error(f"⚠ No valid data available for {crypto}. API may have failed.")
 else:
     st.write(f"### {crypto} Price Trend - Last 30 Days")
-    fig = px.line(data, x="Timestamp", y="Close", title=f"{crypto} Price Trend")
+    fig = px.line(data, x="Timestamp", y="Price", title=f"{crypto} Price Trend")
     st.plotly_chart(fig)
 
     # Show Latest Price
-    latest_price = data['Close'].iloc[-1]
+    latest_price = data["Price"].iloc[-1]
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
