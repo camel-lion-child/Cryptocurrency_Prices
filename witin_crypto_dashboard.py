@@ -80,30 +80,6 @@ def get_crypto_data(crypto_id, days=7):
     df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
-# Streamlit UI
-st.title("📈 WITIN Crypto Analytics Dashboard")
-
-# Sidebar: User input
-crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
-days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
-
-# Fetch and display data
-crypto_id = COINS[crypto]  # Get CoinGecko ID
-data = get_crypto_data(crypto_id, days)
-
-# Check if DataFrame is empty before displaying the chart
-if data.empty:
-    st.error(f"⚠ No data available for {crypto}. Try another cryptocurrency.")
-else:
-    st.write(f"### {crypto} Price Trend - Last {days} Days")
-    fig = px.line(data, x='Timestamp', y='Price', title=f"{crypto} Price Trend")
-    st.plotly_chart(fig)
-
-    # Show latest price
-    latest_price = data['Price'].iloc[-1]
-    st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
-
-# Future Feature: Add predictive analytics, news integration, and social sentiment analysis
 # Function to fetch cryptocurrency news
 def get_crypto_news(crypto_symbol):
     url = f"https://cryptonews-api.com/api/v1?tickers={crypto_symbol}&items=5&token=YOUR_API_KEY"
@@ -116,9 +92,12 @@ def get_crypto_news(crypto_symbol):
         st.error(f"Failed to fetch news: {e}")
         return []
 
+# Streamlit UI
+st.title("📈 WITIN Crypto Analytics Dashboard")
+
 # Sidebar: User input
-crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
-days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
+crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()), key="crypto_select")
+days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7, key="days_slider")
 
 # Fetch and display data
 crypto_id = COINS[crypto]  # Get CoinGecko ID
@@ -136,7 +115,7 @@ else:
     latest_price = data['Price'].iloc[-1]
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
 
-# 🔥 New Feature: Display Crypto News
+# Display Crypto News
 st.write(f"### 📰 Latest {crypto} News")
 news_articles = get_crypto_news(crypto)
 
