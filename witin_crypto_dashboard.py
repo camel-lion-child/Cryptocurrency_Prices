@@ -85,10 +85,6 @@ def get_crypto_data(crypto_id, days=7):
     return df
 
 # Page configuration
-st.set_page_config(page_title="WITIN Crypto", page_icon="💎", layout="wide")
-
-# Page title
-st.title("📊 WITIN Crypto Dashboard")
 st.write("Bitcoin price heatmap over time.")
 
 # Fetch Bitcoin price history from CoinGecko API
