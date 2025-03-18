@@ -1,4 +1,3 @@
- 
 import streamlit as st
 import pandas as pd
 import requests
@@ -7,14 +6,19 @@ import yfinance as yf
 
 # Function to fetch crypto price data from CoinGecko API
 def get_crypto_data(crypto='bitcoin', days=7):
-    url = f"https://api.coingecko.com/api/v3/coins/{crypto}/market_chart?vs_currency=usd&days={days}"
+    url = f"https://api.coingecko.com/api/v3/coins/{crypto.lower()}/market_chart?vs_currency=usd&days={days}"
     response = requests.get(url)
     data = response.json()
+    
+    # Kiểm tra nếu API không trả về dữ liệu hợp lệ
     if 'prices' not in data:
         return pd.DataFrame(columns=['Timestamp', 'Price'])
+    
     prices = data['prices']
     df = pd.DataFrame(prices, columns=['timestamp', 'price'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    
+    # Viết hoa tên cột
     df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
@@ -27,25 +31,30 @@ def get_crypto_stock_data(symbol='BTC-USD'):
 st.title("📈 WITIN Crypto Analytics Dashboard")
 
 # Sidebar: User input
-crypto_options = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano']
+crypto_options = ['Bitcoin', 'Ethereum', 'Binancecoin', 'Solana', 'Cardano']
 crypto = st.sidebar.selectbox("Select Cryptocurrency", crypto_options)
 days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
 # Fetch and display data
 data = get_crypto_data(crypto.lower(), days)
-st.write(f"### {crypto.capitalize()} Price Trend - Last {days} Days")
-fig = px.line(data, x='timestamp', y='price', title=f"{crypto.capitalize()} Price Trend")
-st.plotly_chart(fig)
 
-# Show latest price
-latest_price = data['price'].iloc[-1]
-st.metric(label=f"Current {crypto.capitalize()} Price", value=f"${latest_price:.2f}")
+# Kiểm tra nếu DataFrame rỗng trước khi hiển thị biểu đồ
+if data.empty:
+    st.error(f"No data available for {crypto}. Try another cryptocurrency.")
+else:
+    st.write(f"### {crypto} Price Trend - Last {days} Days")
+    fig = px.line(data, x='Timestamp', y='Price', title=f"{crypto} Price Trend")
+    st.plotly_chart(fig)
 
-# Yahoo Finance Data for Comparison
-st.write("### Stock-Like Crypto Data from Yahoo Finance")
-yf_data = get_crypto_stock_data(symbol=f"{crypto.upper()}-USD")
-st.dataframe(yf_data.tail())
+    # Show latest price
+    latest_price = data['Price'].iloc[-1]
+    st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
 
-# Show data preview
-st.write("### Data Preview")
-st.dataframe(data.head())
+    # Yahoo Finance Data for Comparison
+    st.write("### Stock-Like Crypto Data from Yahoo Finance")
+    yf_data = get_crypto_stock_data(symbol=f"{crypto.upper()}-USD")
+    st.dataframe(yf_data.tail())
+
+    # Show data preview
+    st.write("### Data Preview")
+    st.dataframe(data.head())
