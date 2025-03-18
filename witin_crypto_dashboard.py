@@ -2,30 +2,24 @@ import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
+import yfinance as yf
 
-# Function to fetch all available crypto coins from CoinGecko API
-def get_top_coins():
-    url = "https://api.coingecko.com/api/v3/coins/list"
+# Function to fetch the top 100 crypto coins from CoinGecko API
+def get_top_coins(limit=100):
+    url = "https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": limit,
+        "page": 1,
+        "sparkline": False
+    }
     response = requests.get(url)
-
-    # Kiểm tra nếu API request thất bại
-    if response.status_code != 200:
-        st.error(f"⚠ Failed to fetch top coins. API Error: {response.status_code}")
-        return {}
-
-    try:
-        data = response.json()
-        if not isinstance(data, list):
-            st.error("⚠ Invalid API response format. Expected a list.")
-            return {}
-
-        # Lấy 100 đồng coin đầu tiên
-        coin_dict = {coin['name']: coin['id'] for coin in data[:100]}
-        return coin_dict
-
-    except Exception as e:
-        st.error(f"⚠ Error parsing API response: {e}")
-        return {}
+    data = response.json()
+    
+    # Extract coin names & IDs
+    coin_dict = {coin['name']: coin['id'] for coin in data}
+    return coin_dict
 
 # Function to fetch crypto price data from CoinGecko API
 def get_crypto_data(crypto_id, days=7):
@@ -50,17 +44,22 @@ def get_crypto_data(crypto_id, days=7):
     df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
+# Function to fetch stock-like crypto data from Yahoo Finance
+def get_crypto_stock_data(symbol='BTC-USD'):
+    try:
+        df = yf.download(symbol, period='1mo', interval='1d')
+        if df.empty:
+            st.warning(f"⚠ No stock data found for {symbol}. Yahoo Finance may not support this symbol.")
+        return df
+    except Exception as e:
+        st.error(f"Error fetching Yahoo Finance data: {e}")
+        return pd.DataFrame()
+
 # Streamlit UI
 st.title("📈 WITIN Crypto Analytics Dashboard")
 
 # Fetch top 100 coins
-coin_dict = get_top_coins()
-
-# Nếu API lỗi, hiển thị cảnh báo và dừng ứng dụng
-if not coin_dict:
-    st.error("⚠ Could not fetch top cryptocurrencies. Please try again later.")
-    st.stop()
-
+coin_dict = get_top_coins(100)
 coin_names = list(coin_dict.keys())
 
 # Sidebar: User input
@@ -86,3 +85,4 @@ else:
     # Show data preview
     st.write("### Data Preview")
     st.dataframe(data.head())
+
