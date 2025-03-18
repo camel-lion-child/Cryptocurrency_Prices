@@ -10,9 +10,12 @@ def get_crypto_data(crypto='bitcoin', days=7):
     url = f"https://api.coingecko.com/api/v3/coins/{crypto}/market_chart?vs_currency=usd&days={days}"
     response = requests.get(url)
     data = response.json()
+    if 'prices' not in data:
+        return pd.DataFrame(columns=['Timestamp', 'Price'])
     prices = data['prices']
     df = pd.DataFrame(prices, columns=['timestamp', 'price'])
     df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df.rename(columns={'timestamp': 'Timestamp', 'price': 'Price'}, inplace=True)
     return df
 
 # Function to fetch stock-like crypto data from Yahoo Finance
@@ -24,12 +27,12 @@ def get_crypto_stock_data(symbol='BTC-USD'):
 st.title("📈 WITIN Crypto Analytics Dashboard")
 
 # Sidebar: User input
-crypto_options = ['Bitcoin', 'Ethereum', 'Binancecoin', 'Solana', 'Cardano']
+crypto_options = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano']
 crypto = st.sidebar.selectbox("Select Cryptocurrency", crypto_options)
 days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
 # Fetch and display data
-data = get_crypto_data(crypto, days)
+data = get_crypto_data(crypto.lower(), days)
 st.write(f"### {crypto.capitalize()} Price Trend - Last {days} Days")
 fig = px.line(data, x='timestamp', y='price', title=f"{crypto.capitalize()} Price Trend")
 st.plotly_chart(fig)
