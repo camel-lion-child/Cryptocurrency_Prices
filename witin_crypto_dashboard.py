@@ -72,44 +72,42 @@ crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
 days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
 # 📡 Fetch Crypto Price Data from CoinGecko API
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_crypto_data(crypto_id, days=90):
-    url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart?vs_currency=usd&days={days}"
+# Define the Streamlit script as a multi-line string
+import streamlit as st
+import pandas as pd
+import requests
+import plotly.express as px
+import yfinance as yf
+
+# Function to fetch crypto price data from CoinGecko API
+def get_crypto_data(crypto='bitcoin', days=7):
+    url = f"https://api.coingecko.com/api/v3/coins/{crypto}/market_chart?vs_currency=usd&days={days}"
     response = requests.get(url)
+    data = response.json()
+    prices = data['prices']
+    df = pd.DataFrame(prices, columns=['timestamp', 'price'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    return df
 
-    if response.status_code == 200:
-        try:
-            data = response.json()
-            if 'prices' not in data or not data['prices']:
-                st.error("⚠ API returned an empty price list.")
-                return pd.DataFrame(columns=['Timestamp', 'Price'])
+# Function to fetch stock-like crypto data from Yahoo Finance
+def get_crypto_stock_data(symbol='BTC-USD'):
+    df = yf.download(symbol, period='1mo', interval='1d')
+    return df
 
-            # Convert API response to DataFrame
-            prices = data['prices']
-            df = pd.DataFrame(prices, columns=['timestamp', 'price'])
-            df['Timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            df.drop(columns=['timestamp'], inplace=True)
+# Streamlit UI
+st.title("📈 WITIN Crypto Analytics Dashboard")
 
-            return df
-        except Exception as e:
-            st.error(f"⚠ Failed to parse API response: {e}")
-            return pd.DataFrame(columns=['Timestamp', 'Price'])
+# Sidebar: User input
+crypto_options = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano']
+crypto = st.sidebar.selectbox("Select Cryptocurrency", crypto_options)
+days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
-    else:
-        st.error(f"⚠ API Error: {response.status_code}. Please try again later.")
-        return pd.DataFrame(columns=['Timestamp', 'Price'])
+# Fetch and display data
+data = get_crypto_data(crypto, days)
+st.write(f"### {crypto.capitalize()} Price Trend - Last {days} Days")
+fig = px.line(data, x='timestamp', y='price', title=f"{crypto.capitalize()} Price Trend")
+st.plotly_chart(fig)
 
-# 📊 Fetch and Display Price Chart
-crypto_id = COINS[crypto]
-data = get_crypto_data(crypto_id, days)
-
-if data.empty:
-    st.error(f"⚠ No data available for {crypto}. Try another cryptocurrency.")
-else:
-    st.write(f"### {crypto} Price Trend - Last {days} Days")
-    fig = px.line(data, x='Timestamp', y='Price', title=f"{crypto} Price Trend")
-    st.plotly_chart(fig)
-
-    # Show Latest Price
-    latest_price = data['Price'].iloc[-1]
-    st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
+# Show latest price
+latest_price = data['price'].iloc[-1]
+st.metric(label=f"Current {crypto.capitalize()} Price", value=f"${latest_price:.2f}")
