@@ -1,3 +1,6 @@
+import subprocess
+subprocess.run(["pip", "install", "matplotlib seaborn plotly pandas requests"], shell=True)
+
 import streamlit as st
 import pandas as pd
 import requests
