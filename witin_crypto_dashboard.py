@@ -1,25 +1,19 @@
-import subprocess
-subprocess.run(["pip", "install", "matplotlib seaborn plotly pandas requests"], shell=True)
-
 import streamlit as st
 import pandas as pd
 import requests
 import plotly.express as px
-import matplotlib.pyplot as plt
-import seaborn as sns
-from datetime import datetime
 
 # 🚀 Page Configuration
 st.set_page_config(page_title="WITIN Crypto Dashboard", page_icon="💎", layout="wide")
 
 # 🎨 Display Logo in Sidebar
-LOGO_URL = "https://raw.githubusercontent.com/your-username/your-repo/main/witin.png"  # Update with your correct GitHub raw link
+LOGO_URL = "https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png"  # Replace with your GitHub raw link
 st.sidebar.image(LOGO_URL, width=150)
 
 # 📊 Title
-st.title("📊 Crypto Analytics Dashboard")
+st.title("📊 Crypto Price Dashboard")
 
-# 🔥 List of 50 important cryptocurrencies
+# 🔥 List of 50 Important Cryptocurrencies
 COINS = {
     "Bitcoin": "bitcoin",
     "Ethereum": "ethereum",
@@ -74,33 +68,25 @@ COINS = {
 }
 
 # 🎯 Sidebar Selection
-crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()), key="crypto_select")
-days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7, key="days_slider")
+crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
+days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
-# 📡 Function to Fetch Cryptocurrency Data
+# 📡 Fetch Crypto Price Data from CoinGecko API
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_crypto_data(crypto_id, days=7):
     url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart?vs_currency=usd&days={days}"
     response = requests.get(url)
     
-    try:
+    if response.status_code == 200:
         data = response.json()
-    except Exception as e:
-        st.error(f"Failed to parse API response: {e}")
-        return pd.DataFrame(columns=['Timestamp', 'Price'])
+        if 'prices' in data:
+            df = pd.DataFrame(data['prices'], columns=['timestamp', 'price'])
+            df['Timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+            df.drop(columns=['timestamp'], inplace=True)
+            return df
+    return pd.DataFrame(columns=['Timestamp', 'Price'])
 
-    if 'prices' not in data:
-        st.error("⚠ No price data found. API response may be invalid.")
-        return pd.DataFrame(columns=['Timestamp', 'Price'])
-
-    prices = data['prices']
-    df = pd.DataFrame(prices, columns=['timestamp', 'price'])
-    df['Timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-    df.drop(columns=['timestamp'], inplace=True)
-
-    return df
-
-# 📊 Fetch and Display Crypto Price Trend
+# 📊 Fetch and Display Price Chart
 crypto_id = COINS[crypto]
 data = get_crypto_data(crypto_id, days)
 
@@ -111,39 +97,6 @@ else:
     fig = px.line(data, x='Timestamp', y='Price', title=f"{crypto} Price Trend")
     st.plotly_chart(fig)
 
-    # Show latest price
+    # Show Latest Price
     latest_price = data['Price'].iloc[-1]
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
-
-# 🚀 Fetch Bitcoin Price Data for Heatmap
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_bitcoin_price_history():
-    API_URL = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart"
-    params = {"vs_currency": "usd", "days": "30", "interval": "daily"}
-    response = requests.get(API_URL)
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        st.warning("⚠ Unable to fetch Bitcoin price data. Please try again later!")
-        return None
-
-# 🔥 Fetch Bitcoin Data
-btc_data = get_bitcoin_price_history()
-
-if btc_data:
-    prices = btc_data["prices"]
-    df = pd.DataFrame(prices, columns=["timestamp", "price"])
-    df["date"] = pd.to_datetime(df["timestamp"], unit="ms").dt.date  # Convert timestamp to date
-
-    # Convert to pivot table format for heatmap
-    df["hour"] = [datetime.now().hour] * len(df)  # Create a dummy hour column
-    heatmap_data = df.pivot("hour", "date", "price")
-
-    # 🎨 Plot Heatmap
-    fig, ax = plt.subplots(figsize=(12, 5))
-    sns.heatmap(heatmap_data, cmap="coolwarm", annot=True, fmt=".0f", linewidths=0.5, ax=ax)
-    plt.title("Bitcoin Price Heatmap (USD) - Last 30 Days", fontsize=14)
-
-    # Display heatmap
-    st.pyplot(fig)
