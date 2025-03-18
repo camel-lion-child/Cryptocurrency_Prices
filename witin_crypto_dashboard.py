@@ -24,7 +24,7 @@ def get_crypto_stock_data(symbol='BTC-USD'):
 st.title("📈 WITIN Crypto Analytics Dashboard")
 
 # Sidebar: User input
-crypto_options = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'cardano']
+crypto_options = ['Bitcoin', 'Ethereum', 'Binancecoin', 'Solana', 'Cardano']
 crypto = st.sidebar.selectbox("Select Cryptocurrency", crypto_options)
 days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
