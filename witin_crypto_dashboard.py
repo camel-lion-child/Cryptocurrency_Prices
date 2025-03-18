@@ -14,12 +14,32 @@ def get_top_coins(limit=100):
         "page": 1,
         "sparkline": False
     }
-    response = requests.get(url)
-    data = response.json()
     
-    # Extract coin names & IDs
-    coin_dict = {coin['name']: coin['id'] for coin in data}
-    return coin_dict
+    response = requests.get(url)
+    
+    # Kiểm tra nếu API request thất bại
+    if response.status_code != 200:
+        st.error(f"⚠ Failed to fetch top coins. API Error: {response.status_code}")
+        return {}
+
+    try:
+        data = response.json()
+        if not isinstance(data, list):
+            st.error("⚠ Invalid API response format. Expected a list.")
+            return {}
+
+        # Kiểm tra nếu danh sách coins rỗng
+        if len(data) == 0:
+            st.error("⚠ No coins found. Try again later.")
+            return {}
+
+        # Lấy 100 đồng coin đầu tiên
+        coin_dict = {coin.get('name', 'Unknown'): coin.get('id', 'Unknown') for coin in data[:100]}
+        return coin_dict
+    
+    except Exception as e:
+        st.error(f"⚠ Error parsing API response: {e}")
+        return {}
 
 # Function to fetch crypto price data from CoinGecko API
 def get_crypto_data(crypto_id, days=7):
@@ -52,7 +72,7 @@ def get_crypto_stock_data(symbol='BTC-USD'):
             st.warning(f"⚠ No stock data found for {symbol}. Yahoo Finance may not support this symbol.")
         return df
     except Exception as e:
-        st.error(f"Error fetching Yahoo Finance data: {e}")
+        st.error(f"⚠ Error fetching Yahoo Finance data: {e}")
         return pd.DataFrame()
 
 # Streamlit UI
@@ -60,6 +80,12 @@ st.title("📈 WITIN Crypto Analytics Dashboard")
 
 # Fetch top 100 coins
 coin_dict = get_top_coins(100)
+
+# Nếu API lỗi, hiển thị cảnh báo và dừng ứng dụng
+if not coin_dict:
+    st.error("⚠ Could not fetch top cryptocurrencies. Please try again later.")
+    st.stop()
+
 coin_names = list(coin_dict.keys())
 
 # Sidebar: User input
@@ -82,7 +108,12 @@ else:
     latest_price = data['Price'].iloc[-1]
     st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
 
+    # Yahoo Finance Data for Comparison
+    st.write("### Stock-Like Crypto Data from Yahoo Finance")
+    yf_data = get_crypto_stock_data(symbol=f"{crypto.upper()}-USD")
+    if not yf_data.empty:
+        st.dataframe(yf_data.tail())
+    
     # Show data preview
     st.write("### Data Preview")
     st.dataframe(data.head())
-
