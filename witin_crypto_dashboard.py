@@ -4,42 +4,59 @@ import requests
 import plotly.express as px
 import yfinance as yf
 
-# Function to fetch the top 100 crypto coins from CoinGecko API
-def get_top_coins(limit=100):
-    url = "https://api.coingecko.com/api/v3/coins/markets"
-    params = {
-        "vs_currency": "usd",
-        "order": "market_cap_desc",
-        "per_page": limit,
-        "page": 1,
-        "sparkline": False
-    }
-    
-    response = requests.get(url)
-    
-    # Kiểm tra nếu API request thất bại
-    if response.status_code != 200:
-        st.error(f"⚠ Failed to fetch top coins. API Error: {response.status_code}")
-        return {}
-
-    try:
-        data = response.json()
-        if not isinstance(data, list):
-            st.error("⚠ Invalid API response format. Expected a list.")
-            return {}
-
-        # Kiểm tra nếu danh sách coins rỗng
-        if len(data) == 0:
-            st.error("⚠ No coins found. Try again later.")
-            return {}
-
-        # Lấy 100 đồng coin đầu tiên
-        coin_dict = {coin.get('name', 'Unknown'): coin.get('id', 'Unknown') for coin in data[:100]}
-        return coin_dict
-    
-    except Exception as e:
-        st.error(f"⚠ Error parsing API response: {e}")
-        return {}
+# Danh sách 50 đồng coin quan trọng
+COINS = {
+    "Bitcoin": "bitcoin",
+    "Ethereum": "ethereum",
+    "Binance Coin": "binancecoin",
+    "Solana": "solana",
+    "Cardano": "cardano",
+    "XRP": "ripple",
+    "Polkadot": "polkadot",
+    "Dogecoin": "dogecoin",
+    "Avalanche": "avalanche-2",
+    "Polygon": "matic-network",
+    "Litecoin": "litecoin",
+    "Chainlink": "chainlink",
+    "Stellar": "stellar",
+    "Cosmos": "cosmos",
+    "Uniswap": "uniswap",
+    "VeChain": "vechain",
+    "Tron": "tron",
+    "Filecoin": "filecoin",
+    "Monero": "monero",
+    "EOS": "eos",
+    "Aave": "aave",
+    "Tezos": "tezos",
+    "The Graph": "the-graph",
+    "Fantom": "fantom",
+    "Maker": "maker",
+    "NEO": "neo",
+    "Kusama": "kusama",
+    "Dash": "dash",
+    "Zcash": "zcash",
+    "SushiSwap": "sushi",
+    "Curve DAO Token": "curve-dao-token",
+    "Compound": "compound",
+    "Waves": "waves",
+    "Chiliz": "chiliz",
+    "Hedera": "hedera-hashgraph",
+    "Enjin Coin": "enjincoin",
+    "Theta Network": "theta-token",
+    "Bitcoin Cash": "bitcoin-cash",
+    "Algorand": "algorand",
+    "Decentraland": "decentraland",
+    "Axie Infinity": "axie-infinity",
+    "Gala": "gala",
+    "Quant": "quant-network",
+    "Celo": "celo",
+    "Thorchain": "thorchain",
+    "Harmony": "harmony",
+    "Stacks": "blockstack",
+    "Flow": "flow",
+    "Kava": "kava",
+    "Helium": "helium"
+}
 
 # Function to fetch crypto price data from CoinGecko API
 def get_crypto_data(crypto_id, days=7):
@@ -78,22 +95,12 @@ def get_crypto_stock_data(symbol='BTC-USD'):
 # Streamlit UI
 st.title("📈 WITIN Crypto Analytics Dashboard")
 
-# Fetch top 100 coins
-coin_dict = get_top_coins(100)
-
-# Nếu API lỗi, hiển thị cảnh báo và dừng ứng dụng
-if not coin_dict:
-    st.error("⚠ Could not fetch top cryptocurrencies. Please try again later.")
-    st.stop()
-
-coin_names = list(coin_dict.keys())
-
 # Sidebar: User input
-crypto = st.sidebar.selectbox("Select Cryptocurrency", coin_names)
+crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
 days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
 
 # Fetch and display data
-crypto_id = coin_dict[crypto]  # Get CoinGecko ID
+crypto_id = COINS[crypto]  # Get CoinGecko ID
 data = get_crypto_data(crypto_id, days)
 
 # Kiểm tra nếu DataFrame rỗng trước khi hiển thị biểu đồ
