@@ -93,7 +93,7 @@ def get_crypto_news(crypto_symbol):
         return []
 
 # Streamlit UI
-st.title("📈 WITIN Crypto Analytics Dashboard")
+st.title("📈 Crypto Analytics Dashboard")
 
 # 🎨 Display Logo in Sidebar
 LOGO_URL = "https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png"  # Update with your GitHub raw link
