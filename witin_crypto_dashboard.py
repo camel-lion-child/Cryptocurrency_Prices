@@ -1,121 +1,60 @@
+
 import streamlit as st
-import pandas as pd
 import requests
-import plotly.express as px
+import pandas as pd
+import matplotlib.pyplot as plt
 
-# 🚀 Page Configuration
-st.set_page_config(page_title="WITIN Crypto Dashboard", page_icon="💎", layout="wide")
+# Fetch data from CoinGecko API
+def get_crypto_data():
+    url = "https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": 50,
+        "page": 1,
+        "sparkline": True
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
 
-# 🎨 Display Logo in Sidebar
-LOGO_URL = "https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png"  # Update with your GitHub raw link
-st.sidebar.image(LOGO_URL, width=100)
-
-# 📊 Title
-st.title("📊 Crypto Price Dashboard")
-
-# 🔥 List of 50 Important Cryptocurrencies
-COINS = {
-    "Bitcoin": "bitcoin",
-    "Ethereum": "ethereum",
-    "Binance Coin": "binancecoin",
-    "Solana": "solana",
-    "Cardano": "cardano",
-    "XRP": "ripple",
-    "Polkadot": "polkadot",
-    "Dogecoin": "dogecoin",
-    "Avalanche": "avalanche-2",
-    "Polygon": "matic-network",
-    "Litecoin": "litecoin",
-    "Chainlink": "chainlink",
-    "Stellar": "stellar",
-    "Cosmos": "cosmos",
-    "Uniswap": "uniswap",
-    "VeChain": "vechain",
-    "Tron": "tron",
-    "Filecoin": "filecoin",
-    "Monero": "monero",
-    "EOS": "eos",
-    "Aave": "aave",
-    "Tezos": "tezos",
-    "The Graph": "the-graph",
-    "Fantom": "fantom",
-    "Maker": "maker",
-    "NEO": "neo",
-    "Kusama": "kusama",
-    "Dash": "dash",
-    "Zcash": "zcash",
-    "SushiSwap": "sushi",
-    "Curve DAO Token": "curve-dao-token",
-    "Compound": "compound",
-    "Waves": "waves",
-    "Chiliz": "chiliz",
-    "Hedera": "hedera-hashgraph",
-    "Enjin Coin": "enjincoin",
-    "Theta Network": "theta-token",
-    "Bitcoin Cash": "bitcoin-cash",
-    "Algorand": "algorand",
-    "Decentraland": "decentraland",
-    "Axie Infinity": "axie-infinity",
-    "Gala": "gala",
-    "Quant": "quant-network",
-    "Celo": "celo",
-    "Thorchain": "thorchain",
-    "Harmony": "harmony",
-    "Stacks": "blockstack",
-    "Flow": "flow",
-    "Kava": "kava",
-    "Helium": "helium"
-}
+# Set up Streamlit interface
+st.set_page_config(layout="wide")
 
 # 🎨 Display Logo in Sidebar
 LOGO_URL = "https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png"  # Update with your GitHub raw link
 st.sidebar.image(LOGO_URL, width=90)
 
+# Sidebar with logo and title
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/6/6f/Bitcoin_Logo.png", width=100)
+st.sidebar.title("Crypto Dashboard")
+st.sidebar.write("Displaying prices of the top 50 cryptocurrencies")
 
-# 🎯 Sidebar Selection
-crypto = st.sidebar.selectbox("Select Cryptocurrency", list(COINS.keys()))
-days = st.sidebar.slider("Select Days of Data", min_value=1, max_value=90, value=7)
+# Fetch data
+st.title("Top 50 Cryptocurrency Prices")
+data = get_crypto_data()
 
-# 📡 Fetch Crypto Price Data from CoinGecko API
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_crypto_data(crypto_id, days=7):
-    url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}/market_chart?vs_currency=usd&days={days}"
-    response = requests.get(url)
-
-    try:
-        data = response.json()
-
-        # Check if API hit rate limit (error 429)
-        if "status" in data and data["status"].get("error_code") == 429:
-            st.error("⚠ API Rate Limit Exceeded! Try again later.")
-            return pd.DataFrame(columns=['Timestamp', 'Price'])
-
-        # Check if 'prices' exist
-        if 'prices' not in data:
-            st.error("⚠ API response does not contain price data.")
-            return pd.DataFrame(columns=['Timestamp', 'Price'])
-
-        prices = data['prices']
-        df = pd.DataFrame(prices, columns=['timestamp', 'price'])
-        df['Timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df.drop(columns=['timestamp'], inplace=True)
-        return df
-
-    except Exception as e:
-        st.error(f"⚠ API Fetch Error: {e}")
-        return pd.DataFrame(columns=['Timestamp', 'Price'])
-
-# 📊 Fetch and Display Price Chart
-crypto_id = COINS[crypto]
-data = get_crypto_data(crypto_id, days)
-
-if data.empty:
-    st.error(f"⚠ No valid data available for {crypto}. API may have failed.")
+# If data is valid, display chart and table
+if data:
+    df = pd.DataFrame(data)[["name", "symbol", "current_price", "market_cap", "total_volume", "sparkline"]]
+    df.columns = ["Name", "Symbol", "Price (USD)", "Market Cap", "24h Volume", "Price Trend"]
+    
+    # Sidebar selection for coin
+    selected_coin = st.sidebar.selectbox("Select a cryptocurrency", df["Name"])
+    selected_data = df[df["Name"] == selected_coin].iloc[0]
+    
+    # Display line chart for selected coin
+    st.subheader(f"Price Trend for {selected_coin}")
+    fig, ax = plt.subplots()
+    ax.plot(selected_data["Price Trend"], marker="o", linestyle="-", color="blue")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Price (USD)")
+    ax.set_title(f"Price Trend of {selected_coin}")
+    st.pyplot(fig)
+    
+    # Display data table
+    st.dataframe(df.drop(columns=["Price Trend"]))
 else:
-    st.write(f"### {crypto} Price Trend - Last {days} Days")
-    fig = px.line(data, x='Timestamp', y='Price', title=f"{crypto} Price Trend")
-    st.plotly_chart(fig)
-
-    # Show Latest Price
-    latest_price = data['Price'].iloc[-1]
-    st.metric(label=f"Current {crypto} Price", value=f"${latest_price:.2f}")
+    st.error("Unable to fetch data from CoinGecko. Please try again later!")
