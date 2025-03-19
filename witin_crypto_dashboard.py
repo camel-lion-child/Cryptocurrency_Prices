@@ -1,27 +1,20 @@
-
 import requests
+import pandas as pd
 
-FLIPSIDE_API_KEY = "1989b34e-ab83-4cab-b260-71278c9095ac"
-FLIPSIDE_API_URL = "https://api.flipsidecrypto.com/queries"
-
-query = {
-    "sql": """
-    SELECT 
-        symbol, 
-        price_usd, 
-        market_cap, 
-        volume_24h
-    FROM flipside.crypto_prices
-    ORDER BY market_cap DESC
-    LIMIT 50
-    """,
+url = "https://api.coingecko.com/api/v3/coins/markets"
+params = {
+    "vs_currency": "usd",
+    "order": "market_cap_desc",
+    "per_page": 50,
+    "page": 1,
+    "sparkline": False
 }
 
-headers = {"x-api-key": FLIPSIDE_API_KEY}
-response = requests.post(FLIPSIDE_API_URL, json=query, headers=headers)
+response = requests.get(url, params=params)
+data = response.json()
 
-if response.status_code == 200:
-    data = response.json()
-    print(data)
-else:
-    print(f"Lỗi: {response.status_code} - {response.text}")
+# Chuyển dữ liệu thành DataFrame
+df = pd.DataFrame(data)[["name", "symbol", "current_price", "market_cap", "total_volume"]]
+
+# Hiển thị dữ liệu
+print(df)
