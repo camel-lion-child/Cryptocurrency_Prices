@@ -79,12 +79,13 @@ def get_crypto_data(crypto_id, days=7):
 
     try:
         data = response.json()
-        
-        # Debug API response
-        st.write("### API Response Debugging")
-        st.write(data)  # Show API response for debugging
 
-        # Check if 'prices' exist in API response
+        # Check if API hit rate limit (error 429)
+        if "status" in data and data["status"].get("error_code") == 429:
+            st.error("⚠ API Rate Limit Exceeded! Try again later.")
+            return pd.DataFrame(columns=['Timestamp', 'Price'])
+
+        # Check if 'prices' exist
         if 'prices' not in data:
             st.error("⚠ API response does not contain price data.")
             return pd.DataFrame(columns=['Timestamp', 'Price'])
