@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import pandas as pd
@@ -19,10 +20,6 @@ def get_crypto_data():
     else:
         return []
 
-# 🎨 Display Logo in Sidebar
-LOGO_URL = "https://raw.githubusercontent.com/camel-lion-child/witin_crypto_dashboard/refs/heads/main/witin.png"  # Update with your GitHub raw link
-st.sidebar.image(LOGO_URL, width=80)
-
 # Set up Streamlit page
 st.set_page_config(layout="wide")
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/6/6f/Bitcoin_Logo.png", width=100)
@@ -41,14 +38,19 @@ if data:
     selected_coin = st.sidebar.selectbox("Select a cryptocurrency", df["Name"])
     selected_data = df[df["Name"] == selected_coin].iloc[0]
     
-    # Display line chart for selected cryptocurrency
-    st.subheader(f"7-Day Price Trend for {selected_coin}")
-    fig, ax = plt.subplots()
-    ax.plot(selected_data["Price Trend"], marker="o", linestyle="-", color="blue")
-    ax.set_xlabel("Days")
-    ax.set_ylabel("Price (USD)")
-    ax.set_title(f"Price Trend of {selected_coin}")
-    st.pyplot(fig)
+    # Extract 7-day price trend (list of prices)
+    price_trend = selected_data["Price Trend"]
+    if isinstance(price_trend, list) and len(price_trend) > 0:
+        # Display line chart for selected cryptocurrency
+        st.subheader(f"7-Day Price Trend for {selected_coin}")
+        fig, ax = plt.subplots()
+        ax.plot(price_trend, marker="o", linestyle="-", color="blue")
+        ax.set_xlabel("Days")
+        ax.set_ylabel("Price (USD)")
+        ax.set_title(f"Price Trend of {selected_coin}")
+        st.pyplot(fig)
+    else:
+        st.warning("No price trend data available for this cryptocurrency.")
     
     # Display data table
     st.subheader("Top 50 Cryptocurrency Prices")
