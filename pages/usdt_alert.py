@@ -36,13 +36,13 @@ def check_alert(usdt_d):
     if previous_usdt_d is not None:
         change = usdt_d - previous_usdt_d
         if change >= THRESHOLD_UP:
-            st.warning(f"🚨 WARNING: USDT.D tăng mạnh ({change:.2f}%)! BTC có thể giảm.")
+            st.warning(f"🚨 WARNING: USDT.D SURGES STRONGLY ({change:.2f}%)! BTC might drop.")
         elif change <= THRESHOLD_DOWN:
-            st.success(f"✅ GOOD SIGNAL: USDT.D giảm ({change:.2f}%)! BTC có thể tăng.")
+            st.success(f"✅ GOOD SIGNAL: USDT.D DECREASES ({change:.2f}%)! BTC might pump.")
     previous_usdt_d = usdt_d
 
 def update_usdt_d():
-    """Cập nhật dữ liệu USDT.D"""
+    """Update USDT.D data"""
     usdt_d = get_usdt_dominance()
     if usdt_d is None:
         return
@@ -58,20 +58,20 @@ def update_usdt_d():
 
 # --- 📢 CẢNH BÁO USDT.D ---
 st.subheader("📢 USDT.D Alert")
-if st.button("Cập nhật USDT Dominance"):
+if st.button("Update USDT Dominance"):
     update_usdt_d()
-    st.success(f"USDT Dominance: {usdt_d_values[-1]}% (Đã cập nhật!)")
+    st.success(f"USDT Dominance: {usdt_d_values[-1]}% (Updated!)")
 
 # --- 📈 BIỂU ĐỒ USDT.D ---
 st.subheader("📊 USDT Dominance Chart")
 if usdt_d_values:
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(timestamps, usdt_d_values, marker='o', linestyle='-', color='b', label="USDT Dominance")
-    ax.set_xlabel("Thời gian")
+    ax.set_xlabel("Time")
     ax.set_ylabel("USDT Dominance (%)")
-    ax.set_title("Biến động USDT.D theo thời gian")
+    ax.set_title("USDT.D volatility over time")
     ax.legend()
     ax.grid()
     st.pyplot(fig)
 else:
-    st.warning("Chưa có dữ liệu. Nhấn 'Cập nhật USDT Dominance' để lấy dữ liệu.")
+    st.warning("No data available. Click 'Update USDT Dominance' to fetch data.")
